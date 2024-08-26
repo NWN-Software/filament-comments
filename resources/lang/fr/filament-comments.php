@@ -12,5 +12,5 @@ return [
     'modal.heading' => 'Commentaires',
 
     'tagged' => 'Taggé',
-    'tagged.body' => 'Bonjour, vous avez été taggé dans une réponse sur :label :title.',
+    'tagged.body' => 'Vous avez été taggé dans une réponse sur :label :title.',
 ];

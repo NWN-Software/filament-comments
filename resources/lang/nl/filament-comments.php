@@ -12,5 +12,5 @@ return [
     'modal.heading' => 'Reacties',
 
     'tagged' => 'Genoemd',
-    'tagged.body' => 'Beste, u bent genoemd in een reactie op :label :title.',
+    'tagged.body' => 'U bent genoemd in een reactie op :label :title.',
 ];

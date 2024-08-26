@@ -12,5 +12,5 @@ return [
     'modal.heading' => 'Comments',
 
     'tagged' => 'Tagged',
-    'tagged.body' => 'Beste, u bent genoemd in een reactie op :label :title.',
+    'tagged.body' => 'You have been tagged in a comment on :label :title.',
 ];
