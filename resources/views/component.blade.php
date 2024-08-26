@@ -1,1 +1,1 @@
-<livewire:comments :record="$record ?? $this->record" />
+<livewire:comments :record="$record ?? $this->record" :resource="$resource" />

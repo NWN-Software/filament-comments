@@ -5,13 +5,26 @@ namespace Parallax\FilamentComments\Actions;
 use Filament\Actions\Action;
 use Filament\Support\Enums\MaxWidth;
 use Illuminate\Contracts\View\View;
-use Parallax\FilamentComments\Models\FilamentComment;
 
 class CommentsAction extends Action
 {
+    public ?string $resource = null;
+
     public static function getDefaultName(): ?string
     {
         return 'comments';
+    }
+
+    public function getResource(): ?string
+    {
+        return $this->resource;
+    }
+
+    public function setResource(string $resource): static
+    {
+        $this->resource = $resource;
+
+        return $this;
     }
 
     protected function setUp(): void
@@ -24,7 +37,7 @@ class CommentsAction extends Action
             ->color('gray')
             ->badge($this->record->filamentComments()->count())
             ->slideOver()
-            ->modalContentFooter(fn (): View => view('filament-comments::component'))
+            ->modalContentFooter(fn (): View => view('filament-comments::component', ['resource' => $this->resource]))
             ->modalHeading(__('filament-comments::filament-comments.modal.heading'))
             ->modalWidth(MaxWidth::Medium)
             ->modalSubmitAction(false)

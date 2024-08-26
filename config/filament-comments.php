@@ -15,7 +15,6 @@ return [
         'empty' => 'heroicon-s-chat-bubble-left-right',
     ],
 
-
     /*
      * The comment model to be used
      */
@@ -33,11 +32,10 @@ return [
      */
     'prune_after_days' => 30,
 
-
     /*
-     * Options: 'rich', 'markdown'
+     * Options: 'rich', 'markdown' or 'scribble'
      */
-    'editor' => 'rich',
+    'editor' => 'scribble',
 
     /*
      * The rich editor toolbar buttons that are available to users.
@@ -65,7 +63,6 @@ return [
      * Authenticatable model class
      */
     'authenticatable' => \App\Models\User::class,
-
 
     /*
      * The name of the table where the comments are stored.

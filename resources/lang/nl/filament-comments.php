@@ -10,4 +10,7 @@ return [
     'notifications.deleted' => 'Reactie verwijderd.',
 
     'modal.heading' => 'Reacties',
+
+    'tagged' => 'Genoemd',
+    'tagged.body' => 'Beste, u bent genoemd in een reactie op :label :title.',
 ];
