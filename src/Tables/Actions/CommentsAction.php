@@ -2,11 +2,10 @@
 
 namespace Parallax\FilamentComments\Tables\Actions;
 
-use Filament\Tables\Actions\Action;
 use Filament\Support\Enums\MaxWidth;
+use Filament\Tables\Actions\Action;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
-use Parallax\FilamentComments\Models\FilamentComment;
 
 class CommentsAction extends Action
 {
@@ -29,7 +28,6 @@ class CommentsAction extends Action
             ->modalHeading(__('filament-comments::filament-comments.modal.heading'))
             ->modalWidth(MaxWidth::Medium)
             ->modalSubmitAction(false)
-            ->modalCancelAction(false)
-            ->visible(fn (): bool => auth()->user()->can('viewAny', config('filament-comments.comment_model')));
+            ->modalCancelAction(false);
     }
 }
