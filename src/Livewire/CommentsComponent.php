@@ -20,7 +20,7 @@ class CommentsComponent extends Component implements HasForms
 
     public ?array $data = [];
 
-    public Model $record;
+    public ?Model $record;
 
     public string $resource;
 
@@ -117,7 +117,7 @@ class CommentsComponent extends Component implements HasForms
                 ->body($notificationText)
                 ->actions([\Filament\Notifications\Actions\Action::make('view')
                     ->url($url)
-                    ->label('Bekijken'),
+                    ->label(__('filament-actions::view.single.label')),
                 ])
                 ->info()
                 ->sendToDatabase($model);
