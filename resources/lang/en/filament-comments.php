@@ -13,4 +13,5 @@ return [
 
     'tagged' => 'Tagged',
     'tagged.body' => 'You have been tagged in a comment on :label :title.',
+    'mail_url_text' => 'You can view it via <a href=":url">our online platform.</a>',
 ];

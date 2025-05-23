@@ -10,6 +10,10 @@ class CommentsAction extends Action
 {
     public ?string $resource = null;
 
+    public bool $sentMailWhenTagged = false;
+
+    public ?string $mailSubjectForTaggedUsers = null;
+
     public static function getDefaultName(): ?string
     {
         return 'comments';
@@ -27,6 +31,20 @@ class CommentsAction extends Action
         return $this;
     }
 
+    public function sentMailWhenTagged(bool $sentMailWhenTagged): static
+    {
+        $this->sentMailWhenTagged = $sentMailWhenTagged;
+
+        return $this;
+    }
+
+    public function setMailSubjectForTaggedUsers(string $mailSubjectForTaggedUsers): static
+    {
+        $this->mailSubjectForTaggedUsers = $mailSubjectForTaggedUsers;
+
+        return $this;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,7 +55,7 @@ class CommentsAction extends Action
             ->color('gray')
             ->badge($this->record?->filamentComments()->count())
             ->slideOver()
-            ->modalContentFooter(fn (): View => view('filament-comments::component', ['resource' => $this->resource]))
+            ->modalContentFooter(fn (): View => view('filament-comments::component', ['resource' => $this->resource, 'sentMailWhenTagged' => $this->sentMailWhenTagged, 'mailSubjectForTaggedUsers' => $this->mailSubjectForTaggedUsers]))
             ->modalHeading(__('filament-comments::filament-comments.modal.heading'))
             ->modalWidth(MaxWidth::Medium)
             ->modalSubmitAction(false)

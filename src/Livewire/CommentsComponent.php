@@ -11,7 +11,9 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
+use Parallax\FilamentComments\Mail\UserTaggedOnCommentMail;
 use Parallax\FilamentComments\Models\FilamentComment;
 
 class CommentsComponent extends Component implements HasForms
@@ -24,9 +26,15 @@ class CommentsComponent extends Component implements HasForms
 
     public string $resource;
 
-    public function mount($resource): void
+    public bool $sentMailWhenTagged = false;
+
+    public ?string $mailSubjectForTaggedUsers = null;
+
+    public function mount($resource, $sentMailWhenTagged = false, $mailSubjectForTaggedUsers = null): void
     {
         $this->resource = $resource;
+        $this->sentMailWhenTagged = $sentMailWhenTagged;
+        $this->mailSubjectForTaggedUsers = $mailSubjectForTaggedUsers;
         $this->form->fill();
     }
 
@@ -100,7 +108,7 @@ class CommentsComponent extends Component implements HasForms
 
         $notificationText = __('filament-comments::filament-comments.tagged.body', ['label' => $label, 'title' => $title]);
 
-        $this->record->filamentComments()->create([
+        $comment = $this->record->filamentComments()->create([
             'subject_type' => $this->record->getMorphClass(),
             'comment' => scribble($data['comment'])->userTagsMap($mappedTags)->toHtml(),
             'user_id' => auth()->id(),
@@ -108,6 +116,11 @@ class CommentsComponent extends Component implements HasForms
 
         foreach ($users as $user) {
             $model = User::find($user);
+
+            if (auth()->user()?->id == $user) { // Skip giving notification or email for yourself
+                continue;
+            }
+
             if (! $model) {
                 continue;
             }
@@ -121,6 +134,11 @@ class CommentsComponent extends Component implements HasForms
                 ])
                 ->info()
                 ->sendToDatabase($model);
+
+            if ($this->sentMailWhenTagged && $model->email) {
+                Mail::to($model->email)
+                    ->queue(new UserTaggedOnCommentMail($comment->comment, $this->mailSubjectForTaggedUsers, $url, $model->locale));
+            }
         }
 
         Notification::make()
