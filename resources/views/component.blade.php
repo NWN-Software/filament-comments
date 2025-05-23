@@ -1,1 +1,6 @@
-<livewire:comments :record="$record ?? $this->record" :resource="$resource" />
+<livewire:comments 
+    :record="$record ?? $this->record" 
+    :resource="$resource" 
+    :sentMailWhenTagged="$sentMailWhenTagged ?? false"
+    :mailSubjectForTaggedUsers="$mailSubjectForTaggedUsers ?? ''"
+/>

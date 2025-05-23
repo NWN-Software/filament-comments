@@ -13,4 +13,5 @@ return [
 
     'tagged' => 'Genoemd',
     'tagged.body' => 'U bent genoemd in een reactie op :label :title.',
+    'mail_url_text' => 'U kunt het bekijken via <a href=":url">onze online platform.</a>',
 ];
