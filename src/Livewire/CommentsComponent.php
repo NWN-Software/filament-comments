@@ -26,14 +26,14 @@ class CommentsComponent extends Component implements HasForms
 
     public string $resource;
 
-    public bool $sentMailWhenTagged = false;
+    public bool $sendMailWhenTagged = false;
 
     public ?string $mailSubjectForTaggedUsers = null;
 
-    public function mount($resource, $sentMailWhenTagged = false, $mailSubjectForTaggedUsers = null): void
+    public function mount($resource, $sendMailWhenTagged = false, $mailSubjectForTaggedUsers = null): void
     {
         $this->resource = $resource;
-        $this->sentMailWhenTagged = $sentMailWhenTagged;
+        $this->sendMailWhenTagged = $sendMailWhenTagged;
         $this->mailSubjectForTaggedUsers = $mailSubjectForTaggedUsers;
         $this->form->fill();
     }
@@ -135,7 +135,7 @@ class CommentsComponent extends Component implements HasForms
                 ->info()
                 ->sendToDatabase($model);
 
-            if ($this->sentMailWhenTagged && $model->email) {
+            if ($this->sendMailWhenTagged && $model->email) {
                 Mail::to($model->email)
                     ->queue(new UserTaggedOnCommentMail($comment->comment, $this->mailSubjectForTaggedUsers, $url, $model->locale));
             }
