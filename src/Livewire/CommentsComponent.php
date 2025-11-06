@@ -137,7 +137,7 @@ class CommentsComponent extends Component implements HasForms
 
             if ($this->sendMailWhenTagged && $model->email) {
                 Mail::to($model->email)
-                    ->queue(new UserTaggedOnCommentMail($comment->comment, $this->mailSubjectForTaggedUsers, $url, $model->locale));
+                    ->queue(new UserTaggedOnCommentMail($comment->comment, $this->mailSubjectForTaggedUsers, $url, $model->locale, auth()->user()->email));
             }
         }
 

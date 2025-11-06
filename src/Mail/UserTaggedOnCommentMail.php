@@ -5,6 +5,7 @@ namespace Parallax\FilamentComments\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -20,7 +21,8 @@ class UserTaggedOnCommentMail extends Mailable
         protected string $mailContent,
         protected ?string $mailSubjectForTaggedUsers = null,
         protected ?string $url = null,
-        protected ?string $language = null
+        protected ?string $language = null,
+        protected string $replyToEmail
     ) {}
 
     /**
@@ -30,6 +32,10 @@ class UserTaggedOnCommentMail extends Mailable
     {
         return new Envelope(
             subject: $this->mailSubjectForTaggedUsers ?? __('filament-comments::filament-comments.tagged.body'),
+            replyTo: new Address(
+                address: $this->replyToEmail,
+                name: $this->replyToEmail,
+            ),
         );
     }
 
