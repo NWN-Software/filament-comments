@@ -2,12 +2,17 @@
 
 namespace Parallax\FilamentComments\Livewire;
 
+use Filament\Actions\Contracts\HasActions;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\RichEditor;
+use Filament\Actions\Action;
 use App\Models\User;
 use Awcodes\Scribble\ScribbleEditor;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
@@ -16,8 +21,9 @@ use Livewire\Component;
 use Parallax\FilamentComments\Mail\UserTaggedOnCommentMail;
 use Parallax\FilamentComments\Models\FilamentComment;
 
-class CommentsComponent extends Component implements HasForms
+class CommentsComponent extends Component implements HasForms, HasActions
 {
+    use InteractsWithActions;
     use InteractsWithForms;
 
     public ?array $data = [];
@@ -38,20 +44,20 @@ class CommentsComponent extends Component implements HasForms
         $this->form->fill();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
         // if (! auth()->user()->can('create', config('filament-comments.comment_model'))) {
         //     return $form;
         // }
 
         if (config('filament-comments.editor') === 'markdown') {
-            $editor = Forms\Components\MarkdownEditor::make('comment')
+            $editor = MarkdownEditor::make('comment')
                 ->hiddenLabel()
                 ->required()
                 ->placeholder(__('filament-comments::filament-comments.comments.placeholder'))
                 ->toolbarButtons(config('filament-comments.toolbar_buttons'));
         } elseif (config('filament-comments.editor') === 'rich') {
-            $editor = Forms\Components\RichEditor::make('comment')
+            $editor = RichEditor::make('comment')
                 ->hiddenLabel()
                 ->required()
                 ->placeholder(__('filament-comments::filament-comments.comments.placeholder'))
@@ -70,8 +76,8 @@ class CommentsComponent extends Component implements HasForms
                 ->placeholder(__('filament-comments::filament-comments.comments.placeholder'));
         }
 
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 $editor,
             ])
             ->statePath('data');
@@ -128,7 +134,7 @@ class CommentsComponent extends Component implements HasForms
             Notification::make()
                 ->title(__('filament-comments::filament-comments.tagged'))
                 ->body($notificationText)
-                ->actions([\Filament\Notifications\Actions\Action::make('view')
+                ->actions([Action::make('view')
                     ->url($url)
                     ->label(__('filament-actions::view.single.label')),
                 ])

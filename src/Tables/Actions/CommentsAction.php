@@ -2,8 +2,8 @@
 
 namespace Parallax\FilamentComments\Tables\Actions;
 
-use Filament\Support\Enums\MaxWidth;
-use Filament\Tables\Actions\Action;
+use Filament\Actions\Action;
+use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,7 +26,7 @@ class CommentsAction extends Action
                 'record' => $record,
             ]))
             ->modalHeading(__('filament-comments::filament-comments.modal.heading'))
-            ->modalWidth(MaxWidth::Medium)
+            ->modalWidth(Width::Medium)
             ->modalSubmitAction(false)
             ->modalCancelAction(false);
     }

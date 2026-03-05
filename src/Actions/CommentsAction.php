@@ -2,8 +2,8 @@
 
 namespace Parallax\FilamentComments\Actions;
 
+use Filament\Support\Enums\Width;
 use Filament\Actions\Action;
-use Filament\Support\Enums\MaxWidth;
 use Illuminate\Contracts\View\View;
 
 class CommentsAction extends Action
@@ -57,7 +57,7 @@ class CommentsAction extends Action
             ->slideOver()
             ->modalContentFooter(fn (): View => view('filament-comments::component', ['resource' => $this->resource, 'sendMailWhenTagged' => $this->sendMailWhenTagged, 'mailSubjectForTaggedUsers' => $this->mailSubjectForTaggedUsers]))
             ->modalHeading(__('filament-comments::filament-comments.modal.heading'))
-            ->modalWidth(MaxWidth::Medium)
+            ->modalWidth(Width::Medium)
             ->modalSubmitAction(false)
             ->modalCancelAction(false);
     }
