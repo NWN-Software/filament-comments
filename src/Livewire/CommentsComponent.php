@@ -12,6 +12,7 @@ use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
@@ -73,62 +74,35 @@ class CommentsComponent extends Component implements HasForms
     public function create(): void
     {
         $this->form->validate();
+
         $data = $this->form->getState();
 
-        $mappedTags = User::all()->mapWithKeys(function ($user) {
-            $name = e($user->name); // uses accessor getNameAttribute()
-            return [$user->id => "@{$name}"];
-        })->toArray();
+        $renderedComment = $data['comment'];
 
-        $tagToUserId = array_flip($mappedTags);
-        $users = [];
-        
-        $commentHtml = $data['comment'];
-        
-        $dom = new DOMDocument();
-        libxml_use_internal_errors(true);
-        $dom->loadHTML('<?xml encoding="utf-8" ?>' . $commentHtml);
-        libxml_clear_errors();
-        $xpath = new DOMXPath($dom);
-        $nodes = $xpath->query('//*[@data-type="mergeTag"]');
-        /** @var DOMElement $node */
-        foreach ($nodes as $node) {
-            $tag = $node->getAttribute('data-id');
-
-            if (! $tag) {
-                continue;
-            }
-
-            if (isset($tagToUserId[$tag])) {
-                $users[] = $tagToUserId[$tag];
-            }
+        if (config('filament-comments.editor') === 'rich') {
+            $processedData = $this->processRichComment($renderedComment);
+            $renderedComment = $processedData['comment'];
+            $users = $processedData['users'];
         }
-
-        $users = array_values(array_unique($users));
 
         $url = $this->resource::getUrl('view', ['record' => $this->record->id]);
         $label = $this->resource::getLabel();
         $title = $this->record->{$this->resource::getRecordTitleAttribute()};
-
         $notificationText = __('filament-comments::filament-comments.tagged.body', ['label' => $label, 'title' => $title]);
-
         $comment = $this->record->filamentComments()->create([
             'subject_type' => $this->record->getMorphClass(),
-            'comment' => $commentHtml,
+            'comment' => $renderedComment,
             'user_id' => auth()->id(),
         ]);
 
-        foreach ($users as $user) {
-            if (auth()->user()?->id == $user) { // Skip giving notification or email for yourself
+        foreach ($users ?? [] as $userId) {
+            if (auth()->user()?->id == $userId) {
                 continue;
             }
-
-            $model = User::find($user);
-
+            $model = User::find($userId);
             if (! $model) {
                 continue;
             }
-
             Notification::make()
                 ->title(__('filament-comments::filament-comments.tagged', locale: $model->locale))
                 ->body($notificationText)
@@ -138,7 +112,6 @@ class CommentsComponent extends Component implements HasForms
                 ])
                 ->info()
                 ->sendToDatabase($model);
-            
             if ($this->sendMailWhenTagged && $model->email) {
                 Mail::to($model->email)
                     ->queue(new UserTaggedOnCommentMail($comment->comment, $this->mailSubjectForTaggedUsers, $url, $model->locale, auth()->user()->email));
@@ -180,5 +153,76 @@ class CommentsComponent extends Component implements HasForms
         $comments = $this->record->filamentComments()->with(['user'])->latest()->get();
 
         return view('filament-comments::comments', ['comments' => $comments]);
+    }
+
+    public function parseVariables(?string $message, array $variables, bool $stripTags = false): string
+    {
+        foreach ($variables as $key => $value) {
+            $stringValue = $value instanceof Htmlable ? $value->toHtml() : (string) $value;
+
+            $boldValue = '<strong>' . $stringValue . '</strong>';
+
+            $message = str_replace('{{'.$key.'}}', $boldValue, $message);
+            $message = preg_replace(
+                '/<span\b(?=[^>]*\bdata-type=["\']mergeTag["\'])(?=[^>]*\bdata-id=["\']'.preg_quote($key, '/').'["\'])[^>]*>.*?<\/span>/s',
+                $boldValue,
+                $message,
+            );
+        }
+        if ($stripTags) {
+            $message = strip_tags($message);
+            $message = preg_replace('/(&nbsp;|\s)+/u', ' ', $message);
+        }
+        return $message;
+    }
+
+    public function processRichComment(string $comment): array
+    {
+        $mappedTags = User::all()->mapWithKeys(function ($user) {
+            $name = e($user->name); // accessor combines firstname + lastname
+            return [$user->id => "@{$name}"];
+        })->toArray();
+
+        $labelToUserIds = [];
+
+        foreach ($mappedTags as $id => $label) {
+            $labelToUserIds[$label] ??= [];
+            $labelToUserIds[$label][] = $id;
+        }
+
+        $users = [];
+
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8" ?>' . $comment);
+        libxml_clear_errors();
+        $xpath = new DOMXPath($dom);
+        $nodes = $xpath->query('//*[@data-type="mergeTag"]');
+        /** @var DOMElement $node */
+        foreach ($nodes as $node) {
+            $label = $node->getAttribute('data-id');
+            if (! $label) {
+                continue;
+            }
+            if (! isset($labelToUserIds[$label])) {
+                continue;
+            }
+
+            foreach ($labelToUserIds[$label] as $userId) {
+                $users[] = $userId;
+            }
+        }
+        $users = array_values(array_unique($users));
+        $variables = [];
+        foreach ($mappedTags as $id => $label) {
+            $variables[$label] = $label;
+        }
+
+        $renderedComment = $this->parseVariables($comment, $variables);
+
+        return [
+            'comment' => $renderedComment,
+            'users' => $users,
+        ];
     }
 }
