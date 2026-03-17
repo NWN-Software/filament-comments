@@ -3,11 +3,12 @@
 namespace Parallax\FilamentComments\Livewire;
 
 use App\Models\User;
-use Awcodes\Scribble\ScribbleEditor;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
+use Filament\Actions\Action;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\MarkdownEditor;
-use Filament\Forms\Components\RichEditor;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -15,6 +16,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
+use Parallax\FilamentComments\Forms\RichTextEditor;
 use Parallax\FilamentComments\Mail\UserTaggedOnCommentMail;
 use Parallax\FilamentComments\Models\FilamentComment;
 
@@ -42,30 +44,23 @@ class CommentsComponent extends Component implements HasForms
 
     public function form(Schema $schema): Schema
     {
-        if (config('filament-comments.editor') === 'markdown') {
+        if (config('filament-comments.editor') === 'rich') {
+            $editor = RichTextEditor::make('comment')
+                ->hiddenLabel()
+                ->required()
+                ->placeholder(__('filament-comments::filament-comments.comments.placeholder'))
+                ->extraInputAttributes(['style' => 'min-height: 6rem'])
+                ->toolbarButtons(config('filament-comments.toolbar_buttons'))
+                ->mergeTags(User::all()
+                    ->mapWithKeys(fn ($user) => [$user->id => "@{$user->name}"])
+                    ->toArray()
+                );
+        } else {
             $editor = MarkdownEditor::make('comment')
                 ->hiddenLabel()
                 ->required()
                 ->placeholder(__('filament-comments::filament-comments.comments.placeholder'))
                 ->toolbarButtons(config('filament-comments.toolbar_buttons'));
-        } elseif (config('filament-comments.editor') === 'rich') {
-            $editor = RichEditor::make('comment')
-                ->hiddenLabel()
-                ->required()
-                ->placeholder(__('filament-comments::filament-comments.comments.placeholder'))
-                ->extraInputAttributes(['style' => 'min-height: 6rem'])
-                ->toolbarButtons(config('filament-comments.toolbar_buttons'));
-        } else {
-            $editor = ScribbleEditor::make('comment')
-                ->hiddenLabel()
-                ->userTags(User::all()->map(function ($user) {
-                    return [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                    ];
-                })->toArray())
-                ->required()
-                ->placeholder(__('filament-comments::filament-comments.comments.placeholder'));
         }
 
         return $schema
@@ -78,23 +73,38 @@ class CommentsComponent extends Component implements HasForms
     public function create(): void
     {
         $this->form->validate();
-
         $data = $this->form->getState();
 
         $mappedTags = User::all()->mapWithKeys(function ($user) {
-            $name = e($user->name);
-
+            $name = e($user->name); // uses accessor getNameAttribute()
             return [$user->id => "@{$name}"];
         })->toArray();
 
-        $scribble = scribble($data['comment']);
+        $tagToUserId = array_flip($mappedTags);
         $users = [];
+        
+        $commentHtml = $data['comment'];
+        
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8" ?>' . $commentHtml);
+        libxml_clear_errors();
+        $xpath = new DOMXPath($dom);
+        $nodes = $xpath->query('//*[@data-type="mergeTag"]');
+        /** @var DOMElement $node */
+        foreach ($nodes as $node) {
+            $tag = $node->getAttribute('data-id');
 
-        $scribble->getEditor()->setContent($data['comment'])->descendants(function ($node) use (&$users) {
-            if ($node->type === 'userTag') {
-                $users[] = $node->attrs->id->id;
+            if (! $tag) {
+                continue;
             }
-        });
+
+            if (isset($tagToUserId[$tag])) {
+                $users[] = $tagToUserId[$tag];
+            }
+        }
+
+        $users = array_values(array_unique($users));
 
         $url = $this->resource::getUrl('view', ['record' => $this->record->id]);
         $label = $this->resource::getLabel();
@@ -104,7 +114,7 @@ class CommentsComponent extends Component implements HasForms
 
         $comment = $this->record->filamentComments()->create([
             'subject_type' => $this->record->getMorphClass(),
-            'comment' => scribble($data['comment'])->userTagsMap($mappedTags)->toHtml(),
+            'comment' => $commentHtml,
             'user_id' => auth()->id(),
         ]);
 
@@ -120,11 +130,11 @@ class CommentsComponent extends Component implements HasForms
             }
 
             Notification::make()
-                ->title(__('filament-comments::filament-comments.tagged'))
+                ->title(__('filament-comments::filament-comments.tagged', locale: $model->locale))
                 ->body($notificationText)
-                ->actions([\Filament\Notifications\Actions\Action::make('view')
+                ->actions([Action::make('view')
                     ->url($url)
-                    ->label(__('filament-comments::filament-comments.view')),
+                    ->label(__('filament-comments::filament-comments.view', locale: $model->locale)),
                 ])
                 ->info()
                 ->sendToDatabase($model);

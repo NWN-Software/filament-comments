@@ -35,24 +35,21 @@ return [
 
 
     /*
-     * Options: 'rich', 'markdown' or 'scribble'
+     * Options: 'rich', 'markdown'
      */
-    'editor' => 'scribble',
+    'editor' => 'rich',
 
     /*
      * The rich editor toolbar buttons that are available to users.
      */
     'toolbar_buttons' => [
-        'blockquote',
-        'bold',
         'bulletList',
-        'codeBlock',
-        'italic',
         'link',
         'orderedList',
-        'redo',
         'strike',
         'underline',
+        'mergeTags',
+        'redo',
         'undo',
     ],
 
