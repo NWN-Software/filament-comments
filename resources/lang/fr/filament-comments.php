@@ -4,7 +4,7 @@ return [
     'comments' => 'Commentaires',
     'comments.add' => 'Ajouter un commentaire',
     'comments.empty' => 'Pas encore de commentaires.',
-    'comments.placeholder' => 'Ajouter un commentaire...',
+    'comments.placeholder' => 'Ajouter un commentaire..., appuyer sur \'{{\' pour taguer un utilisateur',
 
     'notifications.created' => 'Commentaire ajouté.',
     'notifications.deleted' => 'Commentaire supprimé.',

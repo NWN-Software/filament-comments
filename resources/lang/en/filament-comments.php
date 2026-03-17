@@ -4,7 +4,7 @@ return [
     'comments' => 'Comments',
     'comments.add' => 'Add comment',
     'comments.empty' => 'No comments yet.',
-    'comments.placeholder' => 'Add a comment...',
+    'comments.placeholder' => 'Add a comment..., press \'{{\' for tag user',
 
     'notifications.created' => 'Comment added.',
     'notifications.deleted' => 'Comment deleted.',
