@@ -4,7 +4,7 @@ return [
     'comments' => 'Reacties',
     'comments.add' => 'Reactie toevoegen',
     'comments.empty' => 'Nog geen reacties.',
-    'comments.placeholder' => 'Voeg een reactie toe..., druk op \'{{\' voor een tag',
+    'comments.placeholder' => 'Voeg een reactie toe..., druk op @ voor een tag',
 
     'notifications.created' => 'Reactie toegevoegd.',
     'notifications.deleted' => 'Reactie verwijderd.',

@@ -9,6 +9,7 @@ use DOMXPath;
 use Filament\Actions\Action;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\RichEditor\MentionProvider;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -52,10 +53,21 @@ class CommentsComponent extends Component implements HasForms
                 ->placeholder(__('filament-comments::filament-comments.comments.placeholder'))
                 ->extraInputAttributes(['style' => 'min-height: 6rem'])
                 ->toolbarButtons(config('filament-comments.toolbar_buttons'))
-                ->mergeTags(User::all()
-                    ->mapWithKeys(fn ($user) => [$user->id => "@{$user->name}"])
-                    ->toArray()
-                );
+                ->mentions([
+                    MentionProvider::make('@')
+                        ->getSearchResultsUsing(fn (string $search): array => User::query()
+                            ->where(fn ($subquery) => $subquery->where('firstname', 'ilike', "%{$search}%")->orWhere('lastname', 'ilike', "%{$search}%"))
+                            ->orderBy('firstname')
+                            ->limit(10)
+                            ->get(['firstname', 'lastname', 'id'])
+                            ->mapWithKeys(fn ($user) => [$user->id => $user->name])
+                            ->toArray())
+                        ->getLabelsUsing(fn (array $ids): array => User::query()
+                            ->whereIn('id', $ids)
+                            ->get(['firstname', 'lastname', 'id'])
+                            ->mapWithKeys(fn ($user) => [$user->id => $user->name])
+                            ->toArray())
+                ]);
         } else {
             $editor = MarkdownEditor::make('comment')
                 ->hiddenLabel()
@@ -77,12 +89,8 @@ class CommentsComponent extends Component implements HasForms
 
         $data = $this->form->getState();
 
-        $renderedComment = $data['comment'];
-
         if (config('filament-comments.editor') === 'rich') {
-            $processedData = $this->processRichComment($renderedComment);
-            $renderedComment = $processedData['comment'];
-            $users = $processedData['users'];
+            $users = $this->getUsersFromComment($data['comment']);
         }
 
         $url = $this->resource::getUrl('view', ['record' => $this->record->id]);
@@ -91,7 +99,7 @@ class CommentsComponent extends Component implements HasForms
         $notificationText = __('filament-comments::filament-comments.tagged.body', ['label' => $label, 'title' => $title]);
         $comment = $this->record->filamentComments()->create([
             'subject_type' => $this->record->getMorphClass(),
-            'comment' => $renderedComment,
+            'comment' => $data['comment'],
             'user_id' => auth()->id(),
         ]);
 
@@ -155,41 +163,8 @@ class CommentsComponent extends Component implements HasForms
         return view('filament-comments::comments', ['comments' => $comments]);
     }
 
-    public function parseVariables(?string $message, array $variables, bool $stripTags = false): string
+    public function getUsersFromComment(string $comment): array
     {
-        foreach ($variables as $key => $value) {
-            $stringValue = $value instanceof Htmlable ? $value->toHtml() : (string) $value;
-
-            $boldValue = '<strong>' . $stringValue . '</strong>';
-
-            $message = str_replace('{{'.$key.'}}', $boldValue, $message);
-            $message = preg_replace(
-                '/<span\b(?=[^>]*\bdata-type=["\']mergeTag["\'])(?=[^>]*\bdata-id=["\']'.preg_quote($key, '/').'["\'])[^>]*>.*?<\/span>/s',
-                $boldValue,
-                $message,
-            );
-        }
-        if ($stripTags) {
-            $message = strip_tags($message);
-            $message = preg_replace('/(&nbsp;|\s)+/u', ' ', $message);
-        }
-        return $message;
-    }
-
-    public function processRichComment(string $comment): array
-    {
-        $mappedTags = User::all()->mapWithKeys(function ($user) {
-            $name = e($user->name); // accessor combines firstname + lastname
-            return [$user->id => "@{$name}"];
-        })->toArray();
-
-        $labelToUserIds = [];
-
-        foreach ($mappedTags as $id => $label) {
-            $labelToUserIds[$label] ??= [];
-            $labelToUserIds[$label][] = $id;
-        }
-
         $users = [];
 
         $dom = new DOMDocument();
@@ -197,32 +172,21 @@ class CommentsComponent extends Component implements HasForms
         $dom->loadHTML('<?xml encoding="utf-8" ?>' . $comment);
         libxml_clear_errors();
         $xpath = new DOMXPath($dom);
-        $nodes = $xpath->query('//*[@data-type="mergeTag"]');
+        $nodes = $xpath->query('//*[@data-type="mention"]');
+
         /** @var DOMElement $node */
         foreach ($nodes as $node) {
-            $label = $node->getAttribute('data-id');
-            if (! $label) {
-                continue;
-            }
-            if (! isset($labelToUserIds[$label])) {
+            $userId = $node->getAttribute('data-id');
+
+            if (! $userId) {
                 continue;
             }
 
-            foreach ($labelToUserIds[$label] as $userId) {
-                $users[] = $userId;
-            }
+            $users[] = (int) $userId;
         }
+
         $users = array_values(array_unique($users));
-        $variables = [];
-        foreach ($mappedTags as $id => $label) {
-            $variables[$label] = $label;
-        }
 
-        $renderedComment = $this->parseVariables($comment, $variables);
-
-        return [
-            'comment' => $renderedComment,
-            'users' => $users,
-        ];
+        return $users;
     }
 }
