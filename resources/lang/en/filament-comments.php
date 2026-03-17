@@ -11,5 +11,10 @@ return [
 
     'modal.heading' => 'Comments',
 
-    'comments.delete.tooltip' => 'Delete comment'
+    'comments.delete.tooltip' => 'Delete comment',
+
+    'tagged' => 'Tagged',
+    'tagged.body' => 'Hello, you have been tagged in a comment on :label :title.',
+    'view' => 'View',
+    'mail_url_text' => 'You can view it via <a href=":url">our online platform.</a>',
 ];

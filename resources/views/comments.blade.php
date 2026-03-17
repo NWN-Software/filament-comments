@@ -1,16 +1,14 @@
 <div class="flex flex-col h-full space-y-4">
-    @if (auth()->user()->can('create', \Parallax\FilamentComments\Models\FilamentComment::class))
-        <div class="space-y-4">
-            {{ $this->form }}
+    <div class="space-y-4">
+        {{ $this->form }}
 
-            <x-filament::button
-                wire:click="create"
-                color="primary"
-            >
-                {{ __('filament-comments::filament-comments.comments.add') }}
-            </x-filament::button>
-        </div>
-    @endif
+        <x-filament::button
+            wire:click="create"
+            color="primary"
+        >
+            {{ __('filament-comments::filament-comments.comments.add') }}
+        </x-filament::button>
+    </div>
 
     @if (count($comments))
         <div class="gap-4">

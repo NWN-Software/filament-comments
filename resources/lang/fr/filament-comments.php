@@ -11,5 +11,10 @@ return [
 
     'modal.heading' => 'Commentaires',
 
-    'comments.delete.tooltip' => 'Supprimer le commentaire'
+    'comments.delete.tooltip' => 'Supprimer le commentaire',
+
+    'tagged' => 'Taggé',
+    'tagged.body' => 'Vous avez été taggé dans une réponse sur :label :title.',
+    'view' => 'Voir',
+    'mail_url_text' => 'Vous pouvez le voir via <a href=":url">notre plateforme en ligne.</a>',
 ];

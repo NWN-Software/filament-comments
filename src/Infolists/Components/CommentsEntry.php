@@ -12,7 +12,5 @@ class CommentsEntry extends Entry
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->visible(fn (): bool => auth()->user()->can('viewAny', config('filament-comments.comment_model')));
     }
 }

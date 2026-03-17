@@ -35,9 +35,9 @@ return [
 
 
     /*
-     * Options: 'rich', 'markdown'
+     * Options: 'rich', 'markdown' or 'scribble'
      */
-    'editor' => 'rich',
+    'editor' => 'scribble',
 
     /*
      * The rich editor toolbar buttons that are available to users.
