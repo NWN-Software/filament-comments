@@ -3,28 +3,27 @@
 namespace Parallax\FilamentComments\Livewire;
 
 use App\Models\User;
-use DOMDocument;
-use DOMElement;
-use DOMXPath;
 use Filament\Actions\Action;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\MentionProvider;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
-use Parallax\FilamentComments\Forms\RichTextEditor;
 use Parallax\FilamentComments\Mail\UserTaggedOnCommentMail;
 use Parallax\FilamentComments\Models\FilamentComment;
 
-class CommentsComponent extends Component implements HasForms
+class CommentsComponent extends Component implements HasForms, HasActions
 {
-    use InteractsWithForms;
+    use InteractsWithForms, InteractsWithActions;
 
     public ?array $data = [];
 
@@ -47,7 +46,7 @@ class CommentsComponent extends Component implements HasForms
     public function form(Schema $schema): Schema
     {
         if (config('filament-comments.editor') === 'rich') {
-            $editor = RichTextEditor::make('comment')
+            $editor = RichEditor::make('comment')
                 ->hiddenLabel()
                 ->required()
                 ->placeholder(__('filament-comments::filament-comments.comments.placeholder'))
@@ -165,28 +164,26 @@ class CommentsComponent extends Component implements HasForms
 
     public function getUsersFromComment(string $comment): array
     {
-        $users = [];
-
-        $dom = new DOMDocument();
-        libxml_use_internal_errors(true);
-        $dom->loadHTML('<?xml encoding="utf-8" ?>' . $comment);
-        libxml_clear_errors();
-        $xpath = new DOMXPath($dom);
-        $nodes = $xpath->query('//*[@data-type="mention"]');
-
-        /** @var DOMElement $node */
-        foreach ($nodes as $node) {
-            $userId = $node->getAttribute('data-id');
-
-            if (! $userId) {
-                continue;
-            }
-
-            $users[] = (int) $userId;
+        if ($comment === null || $comment === '' || $comment === []) {
+            return [];
         }
 
-        $users = array_values(array_unique($users));
+        $editor = RichContentRenderer::make($comment)->getEditor();
 
-        return $users;
+        $ids = [];
+        $editor->descendants(function (object &$node) use (&$ids): void {
+            if ($node->type !== 'mention') {
+                return;
+            }
+
+            $id = $node->attrs->id ?? null;
+            if (blank($id) || ! ctype_digit((string) $id)) {
+                return;
+            }
+
+            $ids[] = (int) $id;
+        });
+
+        return array_values(array_unique($ids));
     }
 }
